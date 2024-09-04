@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class TransactionController extends Controller
 {
@@ -40,15 +41,28 @@ class TransactionController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validated = Validator::make($request->all(),[
             'type' => 'required|string',
             'amount' => 'required|numeric',
             'description' => 'nullable|string',
-            'transaction_date' => 'required|date',
+            'transaction_date' => 'nullable|date',
             
         ]);
+
+        if ($validated->fails()) {
+            return response()->json($validated->errors(), 400);
+        }
+
+        $transaction = Transaction::create([
+            'user_id' => Auth::user()->id,
+            'type' => $request->type,
+            'amount' => $request->amount,
+            'description' => $request->description,
+            'transaction_date' => $request->transaction_date,
+        ]);
+
+        
         // Créer la transaction pour l'utilisateur connecté
-        $transaction = Auth::user()->transactions()->create($validated);
 
         return response()->json($transaction, 201);
     }
@@ -79,18 +93,9 @@ class TransactionController extends Controller
 
     public function destroy($id)
     {
-        // Vérifier si l'utilisateur est admin
-        if (Auth::user()->role === 'admin') {
-            // Si admin, récupérer la transaction par son id
-            $transaction = Transaction::findOrFail($id);
-        } else {
-            // Sinon, récupérer seulement la transaction de l'utilisateur connecté
-            $transaction = Auth::user()->transactions()->findOrFail($id);
-        }
+        
+        Transaction::destroy($id);
 
-        // Supprimer la transaction
-        $transaction->delete();
-
-        return response()->json(null, 204);
+        return response()->json("Transaction deleted successfully", 200);
     }
 }
