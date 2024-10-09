@@ -23,7 +23,7 @@ class TransactionController extends Controller
 
         return response()->json($transactions);
     }
-    
+
 
     public function show($id)
     {
@@ -46,7 +46,7 @@ class TransactionController extends Controller
             'amount' => 'required|numeric',
             'description' => 'nullable|string',
             'transaction_date' => 'nullable|date',
-            
+
         ]);
 
         if ($validated->fails()) {
@@ -61,7 +61,7 @@ class TransactionController extends Controller
             'transaction_date' => $request->transaction_date,
         ]);
 
-        
+
         // Créer la transaction pour l'utilisateur connecté
 
         return response()->json($transaction, 201);
@@ -93,7 +93,15 @@ class TransactionController extends Controller
 
     public function destroy($id)
     {
+        $user = Auth::user();
         
+        $transaction = Transaction::find($id);
+
+        if($transaction->user_id != $user->id) {
+            return response()->json("Forbidden", 403);
+        }
+
+
         Transaction::destroy($id);
 
         return response()->json("Transaction deleted successfully", 200);
